@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<!-- Cropper.js -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<!-- GLFX -->
+<script src="https://evanw.github.io/glfx.js/glfx.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emoji Mosaic Generator</title>
+
+<link rel="preload" href="https://pub-158fe245ad374907b7bb850980fbef49.r2.dev/Noto-COLRv1.ttf" as="font" type="font/ttf" crossorigin>
+
+<style>
+@font-face {
+  font-family: 'NotoEmoji';
+  src: url('https://pub-158fe245ad374907b7bb850980fbef49.r2.dev/Noto-COLRv1.ttf')
+       format('truetype');
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+body { background:#111; color:white; font-family:sans-serif; text-align:center; }
+h2 { margin-top:20px; }
+
+/* Output */
+#outputCanvas { width: 600px; height: auto; }
+#inputCanvas { display:none; }
+
+/* ---------------- INSTAGRAM CROP UI ---------------- */
+
+#preCropModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.8);
+  backdrop-filter:blur(8px);
+  z-index:9999;
+  align-items:center;
+  justify-content:center;
+}
+
+/* Instagram box */
+#preCropBox{
+  width:92vw;
+  max-width:860px;
+  height:88vh;
+  background:#111;
+  border-radius:18px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 0 40px rgba(0,0,0,0.6);
+}
+
+/* Top bar */
+#instaTopBar{
+  height:50px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 18px;
+  background:#111;
+  border-bottom:1px solid #222;
+  color:white;
+  font-size:17px;
+  font-weight:600;
+}
+
+#instaCloseBtn{
+  font-size:24px;
+  cursor:pointer;
+  opacity:0.75;
+}
+
+/* Crop area */
+#cropperWrapper{
+  flex:1;
+  background:black;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+#preCropImage{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+}
+
+/* Toolbar */
+#instaToolbar{
+  height:70px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  background:#111;
+  border-top:1px solid #222;
+}
+
+/* Toolbar button */
+.insta-btn{
+  width:48px;
+  height:48px;
+  background:#1a1a1a;
+  border:1px solid #333;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  color:white;
+  cursor:pointer;
+  transition:0.15s ease;
+}
+
+.insta-btn:active{
+  transform:scale(0.9);
+}
+
+/* Bottom Done button */
+#doneButtonContainer{
+  padding:16px;
+  background:#111;
+  border-top:1px solid #222;
+}
+
+#preCropDone{
+  width:100%;
+  padding:14px;
+  font-size:17px;
+  font-weight:600;
+  background:#0095f6;
+  border-radius:12px;
+  border:none;
+  color:white;
+}
+
+/* Mobile tweaks */
+@media(max-width:640px){
+  #preCropBox{ width:96vw; height:92vh; }
+  #instaToolbar{ gap:14px; }
+  .insta-btn{ width:42px; height:42px; font-size:18px; }
+}
+
+/* === Fix mosaic overflow on mobile === */
+#mosaicCanvas {
+  max-width: 100vw !important;
+  height: auto !important;
+  display: block;
+  margin: 0 auto;
+}
+
+#mosaicContainer {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+</style>
+
+</head>
+<body>
+
+<h2>Emoji Mosaic Generator</h2>
+
+<input type="file" id="imageUpload" accept="image/*"><br><br>
+<canvas id="inputCanvas"></canvas>
+<div id="mosaicContainer"></div>
+<button id="downloadBtn">Download PNG</button>
+
+<!-- Instagram Crop Modal -->
+<div id="preCropModal">
+  <div id="preCropBox">
+
+    <div id="instaTopBar">
+      <span>Edit</span>
+      <div id="instaCloseBtn">✕</div>
+    </div>
+
+    <div id="cropperWrapper">
+      <img id="preCropImage">
+    </div>
+
+    <div id="instaToolbar">
+      <div class="insta-btn" id="rotateBtn">⟲</div>
+      <div class="insta-btn" id="flipHBtn">⇆</div>
+      <div class="insta-btn" id="flipVBtn">⇅</div>
+      <div class="insta-btn" id="zoomInBtn">＋</div>
+      <div class="insta-btn" id="zoomOutBtn">－</div>
+      <div class="insta-btn" id="resetBtn">⟳</div>
+    </div>
+
+    <div id="doneButtonContainer">
+      <button id="preCropDone">Done</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="wasm_glue.js"></script>
+<script src="script.js"></script>
+
+<script>
+/* Instagram UI + Preprocess */
+
+window.preprocessEmojiEnhance = function(file, {
+  portraitWidth = 1080,
+  portraitHeight = 1354,
+  toneBrightness = 0.8,
+  toneRGBA = 'rgba(244,233,50,0.26)',
+  unsharpRadius = 53,
+  unsharpStrength = 2.9,
+  finalFilter = 'brightness(1.18) contrast(1.05)',
+  overlaySrc = ''
+} = {}) {
+
+return new Promise((resolve, reject) => {
+
+  const modal = document.getElementById("preCropModal");
+  const img = document.getElementById("preCropImage");
+  const closeBtn = document.getElementById("instaCloseBtn");
+  const doneBtn = document.getElementById("preCropDone");
+
+  let cropper;
+
+  const url = URL.createObjectURL(file);
+  img.src = url;
+  modal.style.display = "flex";
+
+  closeBtn.onclick = () => { modal.style.display="none"; cropper?.destroy(); };
+
+  setTimeout(() => {
+    cropper = new Cropper(img, {
+      aspectRatio: portraitWidth / portraitHeight,
+      viewMode: 1,
+      background: false,
+      dragMode: "move",
+      autoCropArea: 1,
+      movable: true,
+      zoomable: true,
+      cropBoxMovable: false,
+      cropBoxResizable: false
+    });
+  }, 80);
+
+  // Toolbar actions
+  rotateBtn.onclick = () => cropper.rotate(90);
+
+  flipHBtn.onclick = () => {
+    let scaleX = cropper.getData().scaleX || 1;
+    cropper.scaleX(scaleX * -1);
+  };
+
+  flipVBtn.onclick = () => {
+    let scaleY = cropper.getData().scaleY || 1;
+    cropper.scaleY(scaleY * -1);
+  };
+
+  zoomInBtn.onclick = () => cropper.zoom(0.1);
+  zoomOutBtn.onclick = () => cropper.zoom(-0.1);
+
+  resetBtn.onclick = () => cropper.reset();
+
+
+  // Done button
+  doneBtn.onclick = () => {
+    try {
+      const cropped = cropper.getCroppedCanvas({ width: portraitWidth, height: portraitHeight });
+
+      const temp = document.createElement("canvas");
+      temp.width = portraitWidth;
+      temp.height = portraitHeight;
+      const tctx = temp.getContext("2d");
+
+      tctx.filter = `brightness(${toneBrightness})`;
+      tctx.drawImage(cropped, 0, 0);
+      tctx.globalCompositeOperation = "multiply";
+      tctx.fillStyle = toneRGBA;
+      tctx.fillRect(0, 0, temp.width, temp.height);
+      tctx.globalCompositeOperation = "source-over";
+      tctx.filter = "none";
+
+      const fxCanvas = fx.canvas();
+      const tex = fxCanvas.texture(temp);
+      fxCanvas.draw(tex).unsharpMask(unsharpRadius, unsharpStrength).update();
+
+      const out = document.createElement("canvas");
+      out.width = portraitWidth;
+      out.height = portraitHeight;
+      const octx = out.getContext("2d");
+
+      octx.drawImage(fxCanvas, 0, 0);
+
+      if (window.__overlayImage && overlaySrc) {
+        octx.globalCompositeOperation = "overlay";
+        octx.drawImage(window.__overlayImage, 0, 0, out.width, out.height);
+        octx.globalCompositeOperation = "source-over";
+      }
+
+      modal.style.display = "none";
+      cropper.destroy();
+      resolve(out);
+
+    } catch(err){
+      console.error(err);
+      reject(err);
+    }
+  };
+
+});
+};
+
+// preload overlay
+window.__overlayImage = null;
+(function(){
+  const overlay = new Image();
+  overlay.crossOrigin = "anonymous";
+  overlay.src = "https://pub-158fe245ad374907b7bb850980fbef49.r2.dev/overlay.png";
+  overlay.onload = () => window.__overlayImage = overlay;
+})();
+</script>
+
+</body>
+</html>
