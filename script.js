@@ -155,6 +155,7 @@ function downloadMosaicPNG() {
   const canvas = document.getElementById("mosaicCanvas");
   if (!canvas) return alert("Please generate the mosaic first!");
 
+  // TURBO ENCODING MODE (Fastest)
   canvas.toBlob((blob) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -162,7 +163,6 @@ function downloadMosaicPNG() {
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
-  }, "image/webp", 0.5); // ⭐ 70% QUALITY
+  }, "image/webp", 0.45);  // ⭐ TURBO: super fast + still sharp
 }
-
 document.getElementById("downloadBtn").addEventListener("click", downloadMosaicPNG);
