@@ -162,7 +162,7 @@ function downloadMosaicPNG() {
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
-  }, "image/webp", 0.7); // ⭐ 70% QUALITY
+  }, "image/webp", 0.5); // ⭐ 70% QUALITY
 }
 
 document.getElementById("downloadBtn").addEventListener("click", downloadMosaicPNG);
