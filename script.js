@@ -155,14 +155,38 @@ function downloadMosaicPNG() {
   const canvas = document.getElementById("mosaicCanvas");
   if (!canvas) return alert("Please generate the mosaic first!");
 
-  // TURBO ENCODING MODE (Fastest)
-  canvas.toBlob((blob) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.download = "mosaic-2k.webp";
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, "image/webp", 0.45);  // ⭐ TURBO: super fast + still sharp
+  // Show a countdown for 10 seconds before exporting
+  let countdown = 10;
+  const originalText = document.getElementById("downloadBtn").innerText;
+
+  document.getElementById("downloadBtn").disabled = true;
+
+  const interval = setInterval(() => {
+    document.getElementById("downloadBtn").innerText = 
+      `Preparing... ${countdown}s`;
+
+    countdown--;
+
+    if (countdown < 0) {
+      clearInterval(interval);
+      document.getElementById("downloadBtn").innerText = "Downloading...";
+
+      // ⭐ TURBO ENCODING (FAST + SMALL)
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = "mosaic-2k.webp";
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+
+        // Reset button text
+        document.getElementById("downloadBtn").innerText = originalText;
+        document.getElementById("downloadBtn").disabled = false;
+
+      }, "image/webp", 0.45);  // ⭐ Turbo speed + good quality
+    }
+
+  }, 1000);
 }
 document.getElementById("downloadBtn").addEventListener("click", downloadMosaicPNG);
