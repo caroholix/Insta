@@ -152,33 +152,18 @@ function resetMosaic() {
 
 // === Optional: export functions ===
 function downloadMosaicPNG() {
-  const origCanvas = document.getElementById("mosaicCanvas");
-  if (!origCanvas) return alert("Please generate the mosaic first!");
+  const canvas = document.getElementById("mosaicCanvas");
+  if (!canvas) return alert("Please generate the mosaic first!");
 
-  // ⚡ Create a temporary export canvas WITHOUT DPR
-  const exportCanvas = document.createElement("canvas");
-  const ctx = exportCanvas.getContext("2d");
+  const link = document.createElement("a");
+  link.download = "mosaic-2k.jpg"; // Changed to JPG
+  link.href = canvas.toDataURL("image/jpeg", 0.95); // High quality JPEG
+  link.click();
 
-  // ⭐ Keep the same SIZE as your final 2K display size
-  exportCanvas.width = origCanvas.width / (window.devicePixelRatio || 1);
-  exportCanvas.height = origCanvas.height / (window.devicePixelRatio || 1);
-
-  // ⭐ Draw the original high-DPR canvas onto normal DPR canvas
-  ctx.drawImage(
-    origCanvas,
-    0, 0,
-    exportCanvas.width,
-    exportCanvas.height
-  );
-
-  // 🚀 TURBO ENCODING (0.45 = fast + small + still sharp)
-  exportCanvas.toBlob((blob) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.download = "mosaic-2k.webp";
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-  }, "image/webp", 0.45);
+  console.log("✅ JPEG Downloaded");
 }
+
+
+
+
 document.getElementById("downloadBtn").addEventListener("click", downloadMosaicPNG);
