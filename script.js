@@ -152,41 +152,33 @@ function resetMosaic() {
 
 // === Optional: export functions ===
 function downloadMosaicPNG() {
-  const canvas = document.getElementById("mosaicCanvas");
-  if (!canvas) return alert("Please generate the mosaic first!");
+  const origCanvas = document.getElementById("mosaicCanvas");
+  if (!origCanvas) return alert("Please generate the mosaic first!");
 
-  // Show a countdown for 10 seconds before exporting
-  let countdown = 10;
-  const originalText = document.getElementById("downloadBtn").innerText;
+  // ⚡ Create a temporary export canvas WITHOUT DPR
+  const exportCanvas = document.createElement("canvas");
+  const ctx = exportCanvas.getContext("2d");
 
-  document.getElementById("downloadBtn").disabled = true;
+  // ⭐ Keep the same SIZE as your final 2K display size
+  exportCanvas.width = origCanvas.width / (window.devicePixelRatio || 1);
+  exportCanvas.height = origCanvas.height / (window.devicePixelRatio || 1);
 
-  const interval = setInterval(() => {
-    document.getElementById("downloadBtn").innerText = 
-      `Preparing... ${countdown}s`;
+  // ⭐ Draw the original high-DPR canvas onto normal DPR canvas
+  ctx.drawImage(
+    origCanvas,
+    0, 0,
+    exportCanvas.width,
+    exportCanvas.height
+  );
 
-    countdown--;
-
-    if (countdown < 0) {
-      clearInterval(interval);
-      document.getElementById("downloadBtn").innerText = "Downloading...";
-
-      // ⭐ TURBO ENCODING (FAST + SMALL)
-      canvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.download = "mosaic-2k.webp";
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-
-        // Reset button text
-        document.getElementById("downloadBtn").innerText = originalText;
-        document.getElementById("downloadBtn").disabled = false;
-
-      }, "image/webp", 0.45);  // ⭐ Turbo speed + good quality
-    }
-
-  }, 1000);
+  // 🚀 TURBO ENCODING (0.45 = fast + small + still sharp)
+  exportCanvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.download = "mosaic-2k.webp";
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, "image/webp", 0.45);
 }
 document.getElementById("downloadBtn").addEventListener("click", downloadMosaicPNG);
