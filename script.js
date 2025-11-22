@@ -94,6 +94,8 @@ fileInput.addEventListener("change", async (event) => {
   }
 });
 
+
+
 async function renderFromResults(results, cols, rows, tileSize, scale = 1.00) {
   outputContainer.innerHTML = "";
 
@@ -104,16 +106,16 @@ async function renderFromResults(results, cols, rows, tileSize, scale = 1.00) {
     outputContainer.appendChild(canvas);
   }
 
-  const dpr = window.devicePixelRatio || 1;
   const scaleOutput = 2; // 2K output resolution
 
-  canvas.width = cols * tileSize * dpr * scaleOutput;
-  canvas.height = rows * tileSize * dpr * scaleOutput;
+  // Remove DPR multiplication - render at exact 2K
+  canvas.width = cols * tileSize * scaleOutput;
+  canvas.height = rows * tileSize * scaleOutput;
   canvas.style.width = (cols * tileSize) + "px";
   canvas.style.height = (rows * tileSize) + "px";
 
   const ctx = canvas.getContext("2d");
-  ctx.scale(dpr * scaleOutput, dpr * scaleOutput);
+  ctx.scale(scaleOutput, scaleOutput); // Scale once, not with DPR
 
   await document.fonts.load(`${tileSize * scale}px NotoEmoji`);
 
@@ -136,8 +138,10 @@ async function renderFromResults(results, cols, rows, tileSize, scale = 1.00) {
     }
   }
 
-  console.log("✅ Mosaic rendered (2K + scale control)");
+  console.log(`✅ Mosaic rendered at ${canvas.width}x${canvas.height}px`);
 }
+
+
 
 // === Optional: reset button ===
 function resetMosaic() {
