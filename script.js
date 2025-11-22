@@ -155,12 +155,14 @@ function downloadMosaicPNG() {
   const canvas = document.getElementById("mosaicCanvas");
   if (!canvas) return alert("Please generate the mosaic first!");
 
-  const link = document.createElement("a");
-  link.download = "mosaic-2k.png"; // File name when downloaded
-  link.href = canvas.toDataURL("image/png"); // Convert canvas → PNG
-  link.click();
-
-  console.log("✅ PNG Downloaded");
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.download = "mosaic-2k.webp";
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, "image/webp", 0.7); // ⭐ 70% QUALITY
 }
 
 document.getElementById("downloadBtn").addEventListener("click", downloadMosaicPNG);
